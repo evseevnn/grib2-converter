@@ -1,14 +1,27 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from typing import Union
 
 import xarray as xr
+from xarray import DataArray, Dataset
 
 from converter.converter_type import ConverterType
 
 
 def get_input_file_path(file_name: str) -> str:
-    # Getting model name from the file name
+    """
+    Input file name format:
+    icon-d2_germany_regular-lat-lon_single-level_2023100212_000_2d_tot_prec.grib2.bz2
+
+    icon-d2 - model name
+    germany - region
+    regular-lat-lon - grid type
+    single-level - level type
+    2023100212 - date and time, format: YYYYMMDDHH
+    000 - hour shift
+    2d_tot_prec - parameter name
+    """
     file_meta = file_name.split("_")
     model = file_meta[0].replace("-", "_")
     hour_shift = int(file_meta[5])
@@ -32,7 +45,12 @@ class Converter:
         self.destinationType = destinationType
 
     async def convert(self):
-        files = os.listdir(self.input_dir)
+        files = sorted(os.listdir(self.input_dir))
+
+        # We should keep previous precipitation values for decreasing
+        # from the current values, because grib2 format accumulate
+        # data from previous hours
+        previous_precipitation: Union[DataArray, Dataset, None] = None
 
         for file in files:
             logging.info("Converting file: " + file)
@@ -42,7 +60,19 @@ class Converter:
 
             precipitation = ds['tp'] if 'tp' in ds.variables else None
 
-            converted_data = self.destinationType.convert(precipitation)
+            if precipitation is None:
+                logging.info("Skipping no data file: " + file)
+                previous_precipitation = None
+                continue
+
+            try:
+                converted_data = self.destinationType.convert(previous_precipitation, precipitation)
+            except Exception as e:
+                logging.error("Error while converting file: " + file)
+                logging.error(e)
+                continue
+
+            previous_precipitation = precipitation
 
             file_path = get_input_file_path(file)
 

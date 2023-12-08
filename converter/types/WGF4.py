@@ -55,14 +55,26 @@ class WGF4(ConverterType):
     Class for WGF4 type converter.
     """
 
-    def convert(self, data: Dataset) -> bytes:
+    def convert(self, prev_values: DataArray, values: DataArray) -> bytes:
         """
         Converts GRIB2 dataset to WFG4 format and return in bytes
         """
-        header = WGF4Header.from_data(data.latitude, data.longitude).to_bytes()
+        header = WGF4Header.from_data(values.latitude, values.longitude).to_bytes()
         separator = struct.pack("f", SPECIAL_MARKER)
 
-        flatten_data: np.array = data.to_numpy().flatten()
+        flatten_data: np.array = values.to_numpy().flatten()
+
+        # We should decrease current values from previous values
+        if prev_values is not None:
+            prev_flatten_data = prev_values.to_numpy().flatten()
+
+            # ICON-2D model can have different shapes of the data for latest hour of prediction (48 hours forecast)
+            if flatten_data.shape < prev_flatten_data.shape:
+                # case with 48 hours forecast
+                prev_flatten_data = prev_flatten_data[:flatten_data.shape[0]]
+                flatten_data = flatten_data - prev_flatten_data
+            elif flatten_data.shape == prev_flatten_data.shape:
+                flatten_data = flatten_data - prev_flatten_data
 
         # All values should be multiplied by the precision scale
         flatten_data = flatten_data * PRECISION_SCALE

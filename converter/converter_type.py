@@ -5,7 +5,7 @@ class ConverterType(ABC):
     """Abstract class for all converter types."""
 
     @abstractmethod
-    def convert(self, value):
+    def convert(self, prev_value, value):
         """Converts value to the type."""
         pass
 
