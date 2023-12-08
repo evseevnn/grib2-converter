@@ -13,7 +13,7 @@ class SourceDataManager:
     download_dir = None
     max_concurrent_downloads = None
 
-    REGEXP_GET_LINKS = r'<a href="(.*\.grib2\.bz2)">.*</a>'
+    REGEXP_GET_LINKS = r'<a href="(.*regular-lat-lon_single-level.*\.grib2\.bz2)">.*</a>'
 
     def __init__(self, base_url: str, base_data_dir: str, max_concurrent_downloads: int = 5):
         self.base_url = base_url
