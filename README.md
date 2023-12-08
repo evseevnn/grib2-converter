@@ -38,7 +38,7 @@ python3 main.py
 
 1. The converter is not tested on Windows.
 
-2. You can use `wfg4reader.php` for as example of reading WFG4 files on PHP.
+2. You can use `wfg4reader.php` as example of reading WFG4 files on PHP.
 
 ## TODO
 
